@@ -185,7 +185,7 @@ class CreateDocumentExample
     private function setSupplier($document, $partyDetail)
     {
         $address = new Address();
-        $address->setCityName('Kuala Lumpur Malaysia');
+        $address->setCityName('Kuala Lumpur');
         $address->setPostalZone('50480');
         $address->setCountrySubentityCode('14');
 
