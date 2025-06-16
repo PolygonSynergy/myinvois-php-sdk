@@ -49,28 +49,28 @@ use Klsheng\Myinvois\Ubl\Constant\InvoiceTypeCodes;
 
 class CreateDocumentExample
 {
-    public function createXmlDocument($invoiceTypeCode, $id, $supplier, $customer, $delivery, 
+    public function createXmlDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
         $includeSignature = false, $certFilePath = null, $certPrivateKeyFilePath = null, $passphrase = null, $issuerKeys = null)
     {
         $builder = new XmlDocumentBuilder();
-        
-        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $customer, $delivery, 
+
+        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
             $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys);
     }
 
-    public function createJsonDocument($invoiceTypeCode, $id, $supplier, $customer, $delivery, 
+    public function createJsonDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
         $includeSignature = false, $certFilePath = null, $certPrivateKeyFilePath = null, $passphrase = null, $issuerKeys = null)
     {
         $builder = new JsonDocumentBuilder();
 
-        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $customer, $delivery, 
+        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
             $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys);
     }
 
-    private function createBuilder($builder, $invoiceTypeCode, $id, $supplier, $customer, $delivery, 
+    private function createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
         $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys)
     {
-        $document = $this->createDocument($invoiceTypeCode, $id, $supplier, $customer, $delivery, $includeSignature);
+        $document = $this->createDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery, $includeSignature);
 
         $builder->setDocument($document);
 
@@ -78,7 +78,7 @@ class CreateDocumentExample
             $builder->setIssuerKeys($issuerKeys);
             $builder->createSignature($certFilePath, $certPrivateKeyFilePath, $passphrase);
         }
-    
+
         return $builder->build();
     }
 
@@ -112,7 +112,7 @@ class CreateDocumentExample
         }
     }
 
-    private function createDocument($invoiceTypeCode, $id, $supplier, $customer, $delivery, $includeSignature)
+    private function createDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery, $includeSignature)
     {
         $issueDateTime = new \DateTime('now', new \DateTimeZone('UTC'));
         $issueDateTime->modify('-1 day'); // Yesterday
@@ -128,8 +128,8 @@ class CreateDocumentExample
 
         $document = $this->setBillingReference($document);
         $document = $this->setPrepaidPayment($document);
-        $document = $this->setSupplier($document, $supplier);
-        $document = $this->setCustomer($document, $customer);
+        $document = $this->setSupplier($document, $supplier, $supplierInfo);
+        $document = $this->setCustomer($document, $customer, $customerInfo);
         $document = $this->setDelivery($document, $delivery);
         $document = $this->setDocumentLine($document);
         $document = $this->setAdditionalDocumentReference($document);
@@ -149,7 +149,7 @@ class CreateDocumentExample
         for ($i = 0; $i < 2; $i++) {
             $billingReference = new BillingReference();
             $invoiceTypeCode = $document->getInvoiceTypeCode();
-            
+
             if($invoiceTypeCode == InvoiceTypeCodes::INVOICE) {
                 $additionalDocumentReference = new AdditionalDocumentReference();
                 $additionalDocumentReference->setId('E12345678912' . $i);
@@ -182,35 +182,27 @@ class CreateDocumentExample
         return $document;
     }
 
-    private function setSupplier($document, $partyDetail)
+    private function setSupplier($document, $partyDetail, $partyInfo)
     {
         $address = new Address();
-        $address->setCityName('Kuala Lumpur');
-        $address->setPostalZone('50480');
-        $address->setCountrySubentityCode('14');
+        $address->setCityName($partyInfo['address']['cityName']);
+        $address->setPostalZone($partyInfo['address']['postalZone']);
+        $address->setCountrySubentityCode($partyInfo['address']['stateCode']);
 
         $addressLine = new AddressLine();
-        $addressLine->setLine('Lot 66');
-        $address->addAddressLine($addressLine);
-
-        $addressLine = new AddressLine();
-        $addressLine->setLine('Bangunan Merdeka');
-        $address->addAddressLine($addressLine);
-
-        $addressLine = new AddressLine();
-        $addressLine->setLine('Persiaran Jaya');
+        $addressLine->setLine($partyInfo['address']['addressLine']['line']);
         $address->addAddressLine($addressLine);
 
         $country = new Country();
-        $country->setIdentificationCode('MYS');
+        $country->setIdentificationCode($partyInfo['address']['countryCode']);
         $address->setCountry($country);
 
         $legalEntity = new LegalEntity();
-        $legalEntity->setRegistrationName('AMS Setia Jaya Sdn. Bhd.');
+        $legalEntity->setRegistrationName($partyInfo['registrationName']);
 
         $contact = new Contact();
-        $contact->setTelephone('+60123456789');
-        $contact->setElectronicMail('general.ams@supplier.com');
+        $contact->setTelephone($partyInfo['contact']['telephone']);
+        $contact->setElectronicMail($partyInfo['contact']['electronicMail']);
 
         $supplier = new Party();
 
@@ -224,46 +216,38 @@ class CreateDocumentExample
         $supplier->setLegalEntity($legalEntity);
         $supplier->setContact($contact);
 
-        $msicCode = '01111';
+        $msicCode = $partyInfo['industryClassificationCode'];
         $msicCodeDesc = MSICCodes::getDescription($msicCode);
         $supplier->setIndustryClassificationCode($msicCode, $msicCodeDesc);
 
         $accountingParty = new AccountingParty();
-        $accountingParty->setAdditionalAccountID('CPT-CCN-W-211111-KL-000002');
+        $accountingParty->setAdditionalAccountID($partyInfo['additionalAccountID']);
         $accountingParty->setParty($supplier);
-        
+
         return $document->setAccountingSupplierParty($accountingParty);
     }
 
-    private function setCustomer($document, $partyDetail)
+    private function setCustomer($document, $partyDetail, $partyInfo)
     {
         $address = new Address();
-        $address->setCityName('Kuala Lumpur');
-        $address->setPostalZone('50480');
-        $address->setCountrySubentityCode('14');
+        $address->setCityName($partyInfo['address']['cityName']);
+        $address->setPostalZone($partyInfo['address']['postalZone']);
+        $address->setCountrySubentityCode($partyInfo['address']['stateCode']);
 
         $addressLine = new AddressLine();
-        $addressLine->setLine('Lot 66');
-        $address->addAddressLine($addressLine);
-
-        $addressLine = new AddressLine();
-        $addressLine->setLine('Bangunan Merdeka');
-        $address->addAddressLine($addressLine);
-
-        $addressLine = new AddressLine();
-        $addressLine->setLine('Persiaran Jaya');
+        $addressLine->setLine($partyInfo['address']['addressLine']['line']);
         $address->addAddressLine($addressLine);
 
         $country = new Country();
-        $country->setIdentificationCode('MYS');
+        $country->setIdentificationCode($partyInfo['address']['countryCode']);
         $address->setCountry($country);
 
         $legalEntity = new LegalEntity();
-        $legalEntity->setRegistrationName('Hebat Group');
+        $legalEntity->setRegistrationName($partyInfo['registrationName']);
 
         $contact = new Contact();
-        $contact->setTelephone('+60123456789');
-        $contact->setElectronicMail('name@buyer.com');
+        $contact->setTelephone($partyInfo['contact']['telephone']);
+        $contact->setElectronicMail($partyInfo['contact']['electronicMail']);
 
         $customer = new Party();
 
