@@ -58,7 +58,7 @@ class CreateDocumentExample
             $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys);
     }
 
-    public function createJsonDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
+    public function createJsonDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery = null,
         $includeSignature = false, $certFilePath = null, $certPrivateKeyFilePath = null, $passphrase = null, $issuerKeys = null)
     {
         $builder = new JsonDocumentBuilder();
