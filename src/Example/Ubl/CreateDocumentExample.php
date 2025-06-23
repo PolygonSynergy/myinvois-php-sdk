@@ -49,28 +49,28 @@ use Klsheng\Myinvois\Ubl\Constant\InvoiceTypeCodes;
 
 class CreateDocumentExample
 {
-    public function createXmlDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
+    public function createXmlDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery,
         $includeSignature = false, $certFilePath = null, $certPrivateKeyFilePath = null, $passphrase = null, $issuerKeys = null)
     {
         $builder = new XmlDocumentBuilder();
 
-        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
+        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery,
             $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys);
     }
 
-    public function createJsonDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery = null,
+    public function createJsonDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery = null,
         $includeSignature = false, $certFilePath = null, $certPrivateKeyFilePath = null, $passphrase = null, $issuerKeys = null)
     {
         $builder = new JsonDocumentBuilder();
 
-        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
+        return $this->createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery,
             $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys);
     }
 
-    private function createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery,
+    private function createBuilder($builder, $invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery,
         $includeSignature, $certFilePath, $certPrivateKeyFilePath, $passphrase, $issuerKeys)
     {
-        $document = $this->createDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery, $includeSignature);
+        $document = $this->createDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery, $includeSignature);
 
         $builder->setDocument($document);
 
@@ -112,7 +112,7 @@ class CreateDocumentExample
         }
     }
 
-    private function createDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $delivery, $includeSignature)
+    private function createDocument($invoiceTypeCode, $id, $supplier, $supplierInfo, $customer, $customerInfo, $salesInvoice, $itemsData, $delivery, $includeSignature)
     {
         $issueDateTime = new \DateTime('now', new \DateTimeZone('UTC'));
         $issueDateTime->modify('-1 day'); // Yesterday
@@ -126,20 +126,22 @@ class CreateDocumentExample
             $document->setInvoiceTypeCode($typeCode, '1.1'); // 1.1 is with digital signature verification
         }
 
-        $document = $this->setBillingReference($document);
-        $document = $this->setPrepaidPayment($document);
+        // $document = $this->setBillingReference($document);
+        // $document = $this->setPrepaidPayment($document);
         $document = $this->setSupplier($document, $supplier, $supplierInfo);
         $document = $this->setCustomer($document, $customer, $customerInfo);
-        $document = $this->setDelivery($document, $delivery);
-        $document = $this->setDocumentLine($document);
-        $document = $this->setAdditionalDocumentReference($document);
-        $document = $this->setLegalMonetaryTotal($document);
-        $document = $this->setInvoicePeriod($document);
-        $document = $this->setPaymentMeans($document);
-        $document = $this->setPaymentTerms($document);
-        $document = $this->setAllowanceCharges($document);
+        // $document = $this->setDelivery($document, $delivery);
+        // $document = $this->setDocumentLine($document);
+        // $document = $this->setAdditionalDocumentReference($document);
+        // $document = $this->setLegalMonetaryTotal($document);
+        // $document = $this->setInvoicePeriod($document);
+        // $document = $this->setPaymentMeans($document);
+        // $document = $this->setPaymentTerms($document);
+        // $document = $this->setAllowanceCharges($document);
+        $document = $this->setDocumentLine($document, $itemsData);
+        $document = $this->setLegalMonetaryTotal($document, $itemsData, $salesInvoice);
         $document = $this->setTaxTotal($document);
-        $document = $this->setTaxExchangeRate($document);
+        // $document = $this->setTaxExchangeRate($document);
 
         return $document;
     }
@@ -324,74 +326,78 @@ class CreateDocumentExample
         return $document->setDelivery($delivery);
     }
 
-    private function setDocumentLine($document)
+    private function setDocumentLine($document, $itemsData)
     {
-        $allowanceCharges = [];
-        $allowanceCharge = new AllowanceCharge();
-        $allowanceCharge->setChargeIndicator(false);
-        $allowanceCharge->setAllowanceChargeReason('Sample Description');
-        $allowanceCharge->setMultiplierFactorNumeric(0.15);
-        $allowanceCharge->setAmount(100);
-        $allowanceCharges[] = $allowanceCharge;
+        // $allowanceCharges = [];
+        // $allowanceCharge = new AllowanceCharge();
+        // $allowanceCharge->setChargeIndicator(false);
+        // $allowanceCharge->setAllowanceChargeReason('Sample Description1');
+        // $allowanceCharge->setMultiplierFactorNumeric(0.15);
+        // $allowanceCharge->setAmount(100);
+        // $allowanceCharges[] = $allowanceCharge;
 
-        $allowanceCharge = new AllowanceCharge();
-        $allowanceCharge->setChargeIndicator(true);
-        $allowanceCharge->setAllowanceChargeReason('Sample Description');
-        $allowanceCharge->setMultiplierFactorNumeric(0.10);
-        $allowanceCharge->setAmount(100);
-        $allowanceCharges[] = $allowanceCharge;
-
-        $taxTotal = new TaxTotal();
-        $taxTotal->setTaxAmount(14.61);
-
-        $taxScheme = new TaxScheme();
-        $taxScheme->setId('OTH');
-
-        $taxCategory = new TaxCategory();
-        $taxCategory->setId('01');
-        $taxCategory->setPercent(10.0);
-        $taxCategory->setTaxExemptionReason('Exempt New Means of Transport');
-        $taxCategory->setTaxScheme($taxScheme);
-
-        $taxSubTotal = new TaxSubTotal();
-        $taxSubTotal->setTaxableAmount(1460.50);
-        $taxSubTotal->setTaxAmount(14.61);
-        $taxSubTotal->setPercent(10.0);
-        $taxSubTotal->setTaxCategory($taxCategory);
-        $taxTotal->addTaxSubTotal($taxSubTotal);
-
+        // $allowanceCharge = new AllowanceCharge();
+        // $allowanceCharge->setChargeIndicator(true);
+        // $allowanceCharge->setAllowanceChargeReason('Sample Description2');
+        // $allowanceCharge->setMultiplierFactorNumeric(0.10);
+        // $allowanceCharge->setAmount(100);
+        // $allowanceCharges[] = $allowanceCharge;
+        
         $country = new Country();
         $country->setIdentificationCode('MYS');
 
-        $item = new Item();
-        $item->setDescription('螺丝');
-        //$item->setCountry($country); // Removed by MyInvois
-
-        $commodityClassification = new CommodityClassification();
-        $commodityClassification->setItemClassificationCode('12344321', 'PTC');
-        $item->addCommodityClassification($commodityClassification);
-
-        $commodityClassification = new CommodityClassification();
-        $commodityClassification->setItemClassificationCode('011', 'CLASS');
-        $item->addCommodityClassification($commodityClassification);
-
-        $price = new Price();
-        $price->setPriceAmount(17);
-
-        $itemPriceExtension = new ItemPriceExtension();
-        $itemPriceExtension->setAmount(100);
-
         $documentLines = [];
-        $documentLine = new InvoiceLine();
-        $documentLine->setId('1234');
-        $documentLine->setInvoicedQuantity(1);
-        $documentLine->setLineExtensionAmount(1436.50);
-        $documentLine->setAllowanceCharges($allowanceCharges);
-        $documentLine->setTaxTotal($taxTotal);
-        $documentLine->setItem($item);
-        $documentLine->setPrice($price);
-        $documentLine->setItemPriceExtension($itemPriceExtension);
-        $documentLines[] = $documentLine;
+
+        foreach ($itemsData as $index => $itemData) {
+            // Create tax total for each item
+            $taxTotal = new TaxTotal();
+            $taxTotal->setTaxAmount($itemData['tax_amount']);
+
+            $taxScheme = new TaxScheme();
+            $taxScheme->setId('OTH');
+
+            $taxCategory = new TaxCategory();
+            $taxCategory->setId('01');
+            $taxCategory->setPercent($itemData['tax_rate']);
+            $taxCategory->setTaxExemptionReason('Exempt New Means of Transport');
+            $taxCategory->setTaxScheme($taxScheme);
+
+            $taxSubTotal = new TaxSubTotal();
+            $taxSubTotal->setTaxableAmount($itemData['tax_amount']);
+            $taxSubTotal->setTaxAmount($itemData['tax_amount']);
+            $taxSubTotal->setPercent($itemData['tax_rate']);
+            $taxSubTotal->setTaxCategory($taxCategory);
+            $taxTotal->addTaxSubTotal($taxSubTotal);
+
+            // Create item for each itemData
+            $item = new Item();
+            $item->setDescription($itemData['description']);
+            //$item->setCountry($country); // Removed by MyInvois
+
+            $commodityClassification = new CommodityClassification();
+            $commodityClassification->setItemClassificationCode($itemData['item_code'], 'CLASS');
+            $item->addCommodityClassification($commodityClassification);
+
+            // Create price and item price extension for each item
+            $price = new Price();
+            $price->setPriceAmount($itemData['unit_price']);
+
+            $itemPriceExtension = new ItemPriceExtension();
+            $itemPriceExtension->setAmount($itemData['line_extension_amount']);
+
+            // Create document line for each item
+            $documentLine = new InvoiceLine();
+            // $documentLine->setId('1234');
+            $documentLine->setId((string)($index + 1)); // Use item ID or index + 1
+            $documentLine->setInvoicedQuantity($itemData['quantity']);
+            $documentLine->setLineExtensionAmount($itemData['line_extension_amount']);
+            // $documentLine->setAllowanceCharges($allowanceCharges);
+            $documentLine->setTaxTotal($taxTotal);
+            $documentLine->setItem($item);
+            $documentLine->setPrice($price);
+            $documentLine->setItemPriceExtension($itemPriceExtension);
+            $documentLines[] = $documentLine;
+        }
 
         return $document->setInvoiceLines($documentLines);
     }
@@ -423,16 +429,16 @@ class CreateDocumentExample
         return $document->setAdditionalDocumentReferences($additionalDocumentReferences);
     }
 
-    private function setLegalMonetaryTotal($document)
+    private function setLegalMonetaryTotal($document, $itemsData, $salesInvoice)
     {
         $legalMonetaryTotal = new LegalMonetaryTotal();
-        $legalMonetaryTotal->setLineExtensionAmount(1436.50);
-        $legalMonetaryTotal->setTaxExclusiveAmount(1436.50);
-        $legalMonetaryTotal->setTaxInclusiveAmount(1436.50);
-        $legalMonetaryTotal->setAllowanceTotalAmount(1436.50);
-        $legalMonetaryTotal->setChargeTotalAmount(1436.50);
-        $legalMonetaryTotal->setPayableRoundingAmount(0.30);
-        $legalMonetaryTotal->setPayableAmount(1436.50);
+        $legalMonetaryTotal->setLineExtensionAmount($salesInvoice->subtotal_before_tax);
+        $legalMonetaryTotal->setTaxExclusiveAmount($salesInvoice->subtotal_before_tax);
+        $legalMonetaryTotal->setTaxInclusiveAmount($salesInvoice->total_amount);
+        $legalMonetaryTotal->setAllowanceTotalAmount(0);
+        $legalMonetaryTotal->setChargeTotalAmount(0);
+        $legalMonetaryTotal->setPayableRoundingAmount($salesInvoice->rounding_adjustment);
+        $legalMonetaryTotal->setPayableAmount($salesInvoice->total_amount);
 
         return $document->setLegalMonetaryTotal($legalMonetaryTotal);
     }
