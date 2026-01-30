@@ -126,13 +126,17 @@ class MyInvoisClient
     /**
      * Client constructor.
      *
-     * @param string            $clientId
-     * @param string            $clientSecret
-     * @param string            $clientSecret
+     * @param string $clientId
+     * @param string $clientSecret
+     * @param bool $prodMode
      * @param ClientInterface|null $httpClient
      */
-    public function __construct($clientId, $clientSecret, $prodMode = false, ClientInterface $httpClient = null)
-    {
+    public function __construct(
+        string $clientId,
+        string $clientSecret,
+        bool $prodMode = false,
+        ClientInterface $httpClient = null
+    ) {
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->prodMode = $prodMode;
@@ -428,9 +432,9 @@ class MyInvoisClient
      * @throws PHP Exception
      *
      */
-    protected function handleError(Exception $e)
+    protected function handleError(BadResponseException $e)
     {
-        $body = $e->getResponse()->getBody();
+        $body = $e->getResponse()->getReasonPhrase();
         $errorCode = $e->getResponse()->getStatusCode();
 
         throw new Exception($body, $errorCode);
